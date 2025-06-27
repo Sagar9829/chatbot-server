@@ -10,18 +10,22 @@ app.use(bodyParser.json());
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 app.post("/ask", async (req, res) => {
-  const prompt = req.body.prompt;
   try {
+    const prompt = req.body.prompt;
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const result = await model.generateContent(prompt);
+
+    const chat = model.startChat({ history: [] }); // For chat-based messages
+
+    const result = await chat.sendMessage(prompt);
     const response = await result.response;
     const text = response.text();
+
     res.json({ reply: text });
-  } catch (err) {
-    console.error("Error:", err);
-    res.status(500).json({ error: "Gemini API failed" });
+  } catch (error) {
+    console.error("Gemini Error:", error);
+    res.status(500).json({ error: "Something went wrong!" });
   }
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Server running on port ${port}`));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
