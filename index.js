@@ -2,28 +2,24 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-require("dotenv").config();
 
 const app = express();
-app.use(cors());
+
+const corsOptions = {
+  origin: "*", // ⚠️ Replace * with your domain in production
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"]
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
-app.use(express.static("public")); // ✅ Serve index.html from public/
+app.use(express.static("public"));
+
+// ✅ Preflight handler
+app.options("/ask", cors(corsOptions));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ✅ List models (for debugging)
-app.get("/models", async (req, res) => {
-  try {
-    const models = await genAI.listModels();
-    console.log(models);
-    res.json(models);
-  } catch (err) {
-    console.error("Error fetching models:", err);
-    res.status(500).json({ error: "Failed to fetch models" });
-  }
-});
-
-// ✅ Chat endpoint
 app.post("/ask", async (req, res) => {
   try {
     const prompt = req.body.prompt;
@@ -41,6 +37,3 @@ app.post("/ask", async (req, res) => {
     res.status(500).json({ error: error.message || "Something went wrong!" });
   }
 });
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
