@@ -1,16 +1,17 @@
-// Existing imports
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+require("dotenv").config();
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static("public")); // ✅ Serve index.html from public/
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ✅ TEMP route to list available models
+// ✅ List models (for debugging)
 app.get("/models", async (req, res) => {
   try {
     const models = await genAI.listModels();
@@ -22,11 +23,13 @@ app.get("/models", async (req, res) => {
   }
 });
 
-// Your existing /ask route
+// ✅ Chat endpoint
 app.post("/ask", async (req, res) => {
   try {
     const prompt = req.body.prompt;
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({
+      model: process.env.GEMINI_MODEL || "gemini-1.5-pro"
+    });
 
     const chat = model.startChat({ history: [] });
     const result = await chat.sendMessage(prompt);
@@ -35,13 +38,8 @@ app.post("/ask", async (req, res) => {
     res.json({ reply: text });
   } catch (error) {
     console.error("Gemini Error:", error);
-    res.status(500).json({ error: "Something went wrong!" });
+    res.status(500).json({ error: error.message || "Something went wrong!" });
   }
-});
-
-// Basic homepage
-app.get("/", (req, res) => {
-  res.send("Gemini Chatbot API is live ✅");
 });
 
 const PORT = process.env.PORT || 3000;
